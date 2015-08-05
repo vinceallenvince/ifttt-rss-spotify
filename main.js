@@ -72,7 +72,6 @@ emitter.addListener("feedEnd", function(item) {
   });
 
   // Feed is parsed. Get Spotify artist ids for each artist name.
-  console.log(artistNames);
   spm.verifyArtists(artistNames);
 });
 
