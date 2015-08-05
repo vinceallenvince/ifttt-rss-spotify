@@ -9,6 +9,23 @@ var fs = require("fs");
 var nodemailer = require('nodemailer');
 var Q = require('q');
 
+//
+
+var FeedManager = require('./src/feedmanager');
+var SPManager = require('./src/spmanager');
+var EmailManager = require('./src/emailmanager');
+
+// Check if we have cached items.
+var CACHED_ITEMS_FILENAME = appDir + "/items.txt";
+var cachedItems;
+try {
+  cachedItems = JSON.parse(fs.readFileSync(CACHED_ITEMS_FILENAME, "utf8"));
+} catch(error) {
+  cachedItems = {};
+}
+
+// Holds artist names
+var artistNames = [];
 
 // TODO: check args length; return if entries missing
 
@@ -21,11 +38,53 @@ var titleFilter = args.length > 3 ? args[3] : "";
 // Use for hashtag in email subject line
 var emailHashTag = args.length > 4 ? args[4] : "";
 
+//
+
+var eventEmitter = require('events').EventEmitter;
+var emitter = new eventEmitter();
+
+var fm = new FeedManager(emitter, feedUrl);
+fm.requestFeed();
+
+var spm = new SPManager(emitter, "https://api.spotify.com/v1/search?type=artist&q=", "https://api.spotify.com/v1/artists/");
+var em = new EmailManager(emitter, config.email_addr, config.email_pwd, config.email_addr, config.email_recipe, emailHashTag);
+
+
+
+emitter.addListener("feedItem", function(item) {
+
+  var exp = new RegExp(titleFilter, "i");
+
+  if (!cachedItems[item.title] && item.title.search(exp) != -1) {
+    cachedItems[item.title] = "true";
+    var artistName = item.title.replace(exp, "").trim();
+    artistNames.push(artistName);
+  }
+});
+
+emitter.addListener("feedEnd", function(item) {
+  str = JSON.stringify(cachedItems);
+
+  fs.writeFile(CACHED_ITEMS_FILENAME, str, function(error) {
+    if (error) throw error;
+  });
+
+  // Feed is parsed. Get Spotify artist ids for each artist name.
+  spm.verifyArtists(artistNames);
+
+});
+
+emitter.addListener("artistsDone", function(results) {
+  em.emailItems(results);
+});
+
+
+
+
+
+/*
 // Holds artist names
 var artistNames = [];
-
-// Holds new items.
-var newItems = [];
 
 // Check if we have cached items.
 var CACHED_ITEMS_FILENAME = appDir + "/items.txt";
@@ -61,28 +120,6 @@ function handleItem(item) {
     var exp = new RegExp(titleFilter, "i");
     var artistName = item.title.replace(exp, "").trim();
     artistNames.push(artistName);
-
-    /*
-    request("https://api.spotify.com/v1/search?q=" + artistName + "&type=artist", function (error, response, body) {
-      if (!error && response.statusCode == 200) {
-        var resultsArtist = JSON.parse(body);
-        if (resultsArtist.artists.total) {
-          var artistID = resultsArtist.artists.items[0].id;
-                   
-          request("https://api.spotify.com/v1/artists/" + artistID + "/top-tracks?country=US", function (error, response, body) {
-            if (!error && response.statusCode == 200) {
-              var resultsTrack = JSON.parse(body);
-              if (resultsTrack.tracks.length) {
-                var topTrack = resultsTrack.tracks[0].name;
-                console.log(topTrack);
-              }
-            }
-          });
-
-        } 
-      }
-    });*/
-
 	}
 }
 
@@ -204,5 +241,5 @@ function emailItems(items) {
 
   }
 
-}
+}*/
 
