@@ -10,7 +10,7 @@ var ARTIST_SEARCH_URL = "https://api.spotify.com/v1/search?type=artist&q=";
 var ARTIST_TRACKS_URL = "https://api.spotify.com/v1/artists/";
 
 beforeEach(function() {
-	spManager = new SPManager(ARTIST_SEARCH_URL, ARTIST_TRACKS_URL);
+	spManager = new SPManager({}, ARTIST_SEARCH_URL, ARTIST_TRACKS_URL);
 });
 
 describe('SPManager', function() {

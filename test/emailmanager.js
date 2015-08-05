@@ -9,9 +9,10 @@ var EMAIL_USER = "vince@vinceallen.com";
 var EMAIL_PASS = "applesandoranges";
 var EMAIL_ADDR = "vince@vinceallen.com";
 var EMAIL_RECIPE = "trigger@recipe.ifttt.com";
+var HASH_TAG = "#mercurylounge";
 
 beforeEach(function() {
-	emailManager = new EmailManager(EMAIL_USER, EMAIL_PASS, EMAIL_ADDR, EMAIL_RECIPE);
+	emailManager = new EmailManager({}, EMAIL_USER, EMAIL_PASS, EMAIL_ADDR, EMAIL_RECIPE, HASH_TAG);
 });
 
 describe('EmailManager', function() {
@@ -21,6 +22,7 @@ describe('EmailManager', function() {
 		expect(emailManager.pass).toEqual(EMAIL_PASS);
     expect(emailManager.email_from).toEqual(EMAIL_ADDR);
     expect(emailManager.email_to).toEqual(EMAIL_RECIPE);
+    expect(emailManager.hash_tag).toEqual(HASH_TAG);
     
     var fn = function() {
       	spManager = new SPManager();
@@ -29,7 +31,7 @@ describe('EmailManager', function() {
     expect(fn).toThrow();
 	});
 
-  it("should get email items", function() {
+  /*it("should get email items", function() {
     var items = [ { artistName: 'Shirley House',
     artistID: '7kNSDAU61cgZ6cffjdSDPq',
     topTrack: 'Carry on (Remastered)' },
@@ -41,6 +43,6 @@ describe('EmailManager', function() {
     topTrack: 'Philadelphia' } ]
     emailManager.emailItems(items);
 
-  });
+  });*/
 
 });

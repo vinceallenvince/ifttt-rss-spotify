@@ -32,7 +32,6 @@ SPManager.prototype.getArtistID = function(artistName) {
       var resultsArtist = JSON.parse(body);
       if (resultsArtist.artists.total && resultsArtist.artists.items[0].name == artistName) {
         var artistID = resultsArtist.artists.items[0].id;
-        console.log(artistName + ": " + artistID);
         deferred.resolve({
           "artistName": artistName,
           "artistID": artistID
@@ -90,7 +89,6 @@ SPManager.prototype.getTopTrack = function(artistID, artistName) {
 }
 
 SPManager.prototype.handleGetTopTracks = function(results) {
-  console.log(results);
 	this.eventEmitter.emit("artistsDone", results);
 }
 

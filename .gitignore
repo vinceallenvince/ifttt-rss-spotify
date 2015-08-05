@@ -1,3 +1,4 @@
 config*
 items.txt
 node_modules/
+coverage/
