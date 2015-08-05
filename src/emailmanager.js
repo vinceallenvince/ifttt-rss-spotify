@@ -42,7 +42,7 @@ EmailManager.prototype.sendEmail = function(transporter, mailOptions) {
       if (error){
         return console.log(error);
       }
-      console.log("Message sent: " + items[i].artistName + " " + info.response);
+      console.log("Message sent: " + mailOptions.html + " " + info.response);
     });
 };
 
