@@ -30,14 +30,67 @@ SPManager.prototype.getArtistID = function(artistName) {
   request("https://api.spotify.com/v1/search?type=artist&q=" + artistName, function (error, response, body) {
     if (!error && response.statusCode == 200) {
       var resultsArtist = JSON.parse(body);
-      if (resultsArtist.artists.total && resultsArtist.artists.items[0].name == artistName) {
-        var artistID = resultsArtist.artists.items[0].id;
-        deferred.resolve({
-          "artistName": artistName,
-          "artistID": artistID
-        });
-      } else {
-        deferred.resolve("");
+      if (resultsArtist.artists.total) {
+
+        var artistID;
+
+        for (var i = 0; i < resultsArtist.artists.items.length; i++) {
+          if (resultsArtist.artists.items[i].name == artistName) {
+            artistID = resultsArtist.artists.items[i].id;
+            break;
+          }  
+        }
+
+        if (!artistID) {
+          deferred.resolve("");
+        } else {      
+          deferred.resolve({
+            "artistName": artistName,
+            "artistID": artistID
+          });
+        }
+      } else { // check the name is not a combination of artist names
+
+        // is there an "and " in the artistName
+        if (artistName.search("and ") != -1) {
+
+          var andExp = new RegExp("\\and[^)]*\\w", "i");
+          var altName = artistName.replace(andExp, "").trim();
+
+          request("https://api.spotify.com/v1/search?type=artist&q=" + altName, function (error, response, body) {
+            if (!error && response.statusCode == 200) {
+              var resultsArtist = JSON.parse(body);
+              if (resultsArtist.artists.total) {
+
+                var artistID;
+
+                for (var i = 0; i < resultsArtist.artists.items.length; i++) {
+                  if (resultsArtist.artists.items[i].name == altName) {
+                    artistID = resultsArtist.artists.items[i].id;
+                    break;
+                  }  
+                }
+
+                if (!artistID) {
+                  deferred.resolve("");
+                } else {      
+                  deferred.resolve({
+                    "artistName": altName,
+                    "artistID": artistID
+                  });
+                }
+
+              }
+            } else {
+              // TODO: handle request error
+            }
+          });
+
+        } else { // artist not found
+          deferred.resolve("");
+        }
+
+        
       } 
     } else {
     	// TODO: handle request error

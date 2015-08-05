@@ -51,12 +51,16 @@ var em = new EmailManager(emitter, config.email_addr, config.email_pwd, config.e
 
 emitter.addListener("feedItem", function(item) {
 
-  var exp = new RegExp(titleFilter, "i");
+  var venueExp = new RegExp(titleFilter, "i");
+  var withExp = new RegExp("\\with[^)]*\\w", "i");
+  var commaExp = new RegExp("\\,[^)]*\\w", "i");
+  //var ampExp = new RegExp("\\&[^)]*\\w", "i");
+  //var andExp = new RegExp("\\and[^)]*\\w", "i");
 
-  if (!cachedItems[item.title] && item.title.search(exp) != -1) {
+  if (!cachedItems[item.title] && item.title.search(venueExp) != -1) {
     cachedItems[item.title] = "true";
-    var artistName = item.title.replace(exp, "").trim();
-    artistNames.push(artistName);
+    var artistName = item.title.replace(venueExp, "").replace(withExp, "").replace(commaExp, "").trim();
+    artistNames.push(artistName.trim());
   }
 });
 
@@ -68,6 +72,7 @@ emitter.addListener("feedEnd", function(item) {
   });
 
   // Feed is parsed. Get Spotify artist ids for each artist name.
+  console.log(artistNames);
   spm.verifyArtists(artistNames);
 });
 
