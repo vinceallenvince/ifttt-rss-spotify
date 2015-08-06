@@ -15,7 +15,7 @@ function EmailManager(eventEmitter, user, pass, email_addr, email_recipe, hash_t
 }
 
 EmailManager.prototype.emailItems = function(items) {
-console.log(items);
+
   var transporter = nodemailer.createTransport({
     service: "Gmail",
     auth: {
@@ -27,15 +27,17 @@ console.log(items);
   var delay = 0;
 
   for (var i = 0; i < items.length; i++) {
-    var mailOptions = {
-      from: this.email_from, 
-      to: this.email_to, 
-      subject: this.hash_tag, 
-      text: items[i].topTrack,
-      html: items[i].artistName 
+    if (items[i].topTrack && items[i].artistName) {
+      var mailOptions = {
+        from: this.email_from, 
+        to: this.email_to, 
+        subject: this.hash_tag, 
+        text: items[i].topTrack,
+        html: items[i].artistName 
+      }
+      delay += EMAIL_DELAY;
+      setTimeout(this.sendEmail.bind(this, transporter, mailOptions), delay);
     }
-    delay += EMAIL_DELAY;
-    setTimeout(this.sendEmail.bind(this, transporter, mailOptions), delay);
   }
 }
 
