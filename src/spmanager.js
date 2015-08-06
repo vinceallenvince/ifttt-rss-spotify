@@ -37,6 +37,7 @@ SPManager.prototype._parseArtistName = function(titleFilter, eventTitle) {
 };
 
 SPManager.prototype.getArtistIDs = function(artistNames) {
+  
   var promises = [];
   var l = artistNames.length;
   for (var i = 0; i < l; i++) {
@@ -50,7 +51,7 @@ SPManager.prototype.getArtistIDs = function(artistNames) {
 
 SPManager.prototype._getArtistID = function(artistName) {
 	var deferred = Q.defer();
-  request("https://api.spotify.com/v1/search?type=artist&q=" + artistName, this._handleGetArtistID.bind(this, deferred, artistName));
+  request(encodeURI("https://api.spotify.com/v1/search?type=artist&q=" + artistName), this._handleGetArtistID.bind(this, deferred, artistName));
   return deferred.promise;
 };
 
@@ -66,6 +67,8 @@ SPManager.prototype._selectArtistID = function(artistName, resultsArtist) {
 
 SPManager.prototype._handleGetArtistID = function(deferred, artistName, error, response, body) {
 
+  // special chars cause problems resolving artistIDs
+
   if (!error && response.statusCode == 200) {
 
     var resultsArtist = JSON.parse(body);
@@ -79,7 +82,7 @@ SPManager.prototype._handleGetArtistID = function(deferred, artistName, error, r
     } else if (artistName.search(" and ") != -1) { // check the name is not a combination of artist names; is there an "and " in the artistName
         var andExp = new RegExp("\\and[^)]*\\w", "i");
         var altName = artistName.replace(andExp, "").trim();
-        request("https://api.spotify.com/v1/search?type=artist&q=" + altName, this._handleGetArtistID.bind(this, deferred, altName));
+        request(encodeURI("https://api.spotify.com/v1/search?type=artist&q=" + altName), this._handleGetArtistID.bind(this, deferred, altName));
     } else { // Spotify API did not return an artist
       deferred.resolve({
         "artistName": null,
@@ -87,7 +90,10 @@ SPManager.prototype._handleGetArtistID = function(deferred, artistName, error, r
       });
     }
   } else {
-    deferred.reject();
+    deferred.resolve({
+      "artistName": null,
+      "artistID": null
+    });
   }
 };
 
@@ -109,7 +115,7 @@ SPManager.prototype.handleAllGetArtistIDs = function(results) {
 
 SPManager.prototype.getTopTrack = function(artistID, artistName) {
   var deferred = Q.defer();
-  request("https://api.spotify.com/v1/artists/" + artistID + "/top-tracks?country=US", this.handleGetTopTrack.bind(this, deferred, artistID, artistName));
+  request(encodeURI("https://api.spotify.com/v1/artists/" + artistID + "/top-tracks?country=US"), this.handleGetTopTrack.bind(this, deferred, artistID, artistName));
   return deferred.promise;
 }
 
