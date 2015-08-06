@@ -98,7 +98,7 @@ describe('SPManager', function() {
 		var titleFilter = "\\at Pianos \\([^)]*\\)";
 		var eventTitle = "Jon & the Jones with Jules, Teeth People, Lounge Act, and 1 more at Pianos (August 8, 2015)";
 		var name = spManager._parseArtistName(titleFilter, eventTitle);
-		expect(name).toEqual("Jon & the Jones");
+		expect(name).toEqual("Jon and the Jones");
 
 		var titleFilter = "\\at Music Hall of Williamsburg \\([^)]*\\)";
 		var eventTitle = "High On Fire, Pallbearer, Venomous Maximus, and Lucifer at Music Hall of Williamsburg (August 18, 2015)";
