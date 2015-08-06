@@ -5,11 +5,13 @@ function FeedManager(eventEmitter, feedUrl) {
 	if (!feedUrl) new Error();
 	this.eventEmitter = eventEmitter;
 	this.feedUrl = feedUrl;
+	this.eventTitles = [];
 }
 
 FeedManager.prototype.requestFeed = function() {
 
 	var eventEmitter = this.eventEmitter;
+	var eventTitles = this.eventTitles;
 
 	var onError = function(error) {console.error(error);};
 
@@ -24,8 +26,8 @@ FeedManager.prototype.requestFeed = function() {
 	    .on("readable", function() {
 	    	var stream = this, item;
 				while (item = stream.read()) {
-					eventEmitter.emit("feedItem", item);
-					// handleItem(item);
+					//eventEmitter.emit("feedItem", item);
+					eventTitles.push(item);
 				} 
 	    })
 	    .on("end", handleFeedEnd);

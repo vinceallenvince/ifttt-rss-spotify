@@ -46,23 +46,21 @@ var emitter = new eventEmitter();
 var fm = new FeedManager(emitter, feedUrl);
 fm.requestFeed();
 
-var spm = new SPManager(emitter, "https://api.spotify.com/v1/search?type=artist&q=", "https://api.spotify.com/v1/artists/");
+var spm = new SPManager(emitter, "https://api.spotify.com/v1/search?type=artist&q=", "https://api.spotify.com/v1/artists/", titleFilter);
 var em = new EmailManager(emitter, config.email_addr, config.email_pwd, config.email_addr, config.email_recipe, emailHashTag);
 
-emitter.addListener("feedItem", function(item) {
+/*emitter.addListener("feedItem", function(item) {
 
   var venueExp = new RegExp(titleFilter, "i");
   var withExp = new RegExp("\\with[^)]*\\w", "i");
   var commaExp = new RegExp("\\,[^)]*\\w", "i");
-  //var ampExp = new RegExp("\\&[^)]*\\w", "i");
-  //var andExp = new RegExp("\\and[^)]*\\w", "i");
 
   if (!cachedItems[item.title] && item.title.search(venueExp) != -1) {
     cachedItems[item.title] = "true";
     var artistName = item.title.replace(venueExp, "").replace(withExp, "").replace(commaExp, "").trim();
     artistNames.push(artistName.trim());
   }
-});
+});*/
 
 emitter.addListener("feedEnd", function(item) {
   str = JSON.stringify(cachedItems);
@@ -71,8 +69,11 @@ emitter.addListener("feedEnd", function(item) {
     if (error) throw error;
   });
 
-  // Feed is parsed. Get Spotify artist ids for each artist name.
-  spm.verifyArtists(artistNames);
+  spm.parseAritstNamesFromEventTitles(fm.eventTitles);
+});
+
+emitter.addListener("artistNamesParsed", function(artistNames) {
+  spm.getArtistIDs(artistNames);
 });
 
 emitter.addListener("artistsDone", function(results) {

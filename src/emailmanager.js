@@ -13,7 +13,7 @@ function EmailManager(eventEmitter, user, pass, email_addr, email_recipe, hash_t
 }
 
 EmailManager.prototype.emailItems = function(items) {
-
+console.log(items);
   var transporter = nodemailer.createTransport({
     service: "Gmail",
     auth: {
@@ -33,7 +33,7 @@ EmailManager.prototype.emailItems = function(items) {
       html: items[i].artistName 
     }
     delay += 3000;
-    setTimeout(this.sendEmail.bind(this, transporter, mailOptions), delay);
+    //setTimeout(this.sendEmail.bind(this, transporter, mailOptions), delay);
   }
 }
 
