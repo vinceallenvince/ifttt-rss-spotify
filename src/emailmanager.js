@@ -1,5 +1,7 @@
 var nodemailer = require('nodemailer');
 
+var EMAIL_DELAY = 5000;
+
 function EmailManager(eventEmitter, user, pass, email_addr, email_recipe, hash_tag) {
 	if (!eventEmitter || !user || !pass || !email_addr || !email_recipe || !hash_tag) {
 		throw new Error("Error: A new EmailManager requires...");
@@ -32,8 +34,8 @@ console.log(items);
       text: items[i].topTrack,
       html: items[i].artistName 
     }
-    delay += 3000;
-    //setTimeout(this.sendEmail.bind(this, transporter, mailOptions), delay);
+    delay += EMAIL_DELAY;
+    setTimeout(this.sendEmail.bind(this, transporter, mailOptions), delay);
   }
 }
 
