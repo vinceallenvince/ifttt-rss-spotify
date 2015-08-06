@@ -33,11 +33,10 @@ SPManager.prototype._parseArtistName = function(titleFilter, eventTitle) {
   var withExp = new RegExp("\\with[^)]*\\w", "i");
   var commaExp = new RegExp("\\,[^)]*\\w", "i");
 
-  return eventTitle.replace(venueExp, "").replace(withExp, "").replace(commaExp, "").trim();    
+  return eventTitle.replace(venueExp, "").replace(withExp, "").replace(commaExp, "").replace("&", "and").trim();
 };
 
 SPManager.prototype.getArtistIDs = function(artistNames) {
-
   var promises = [];
   var l = artistNames.length;
   for (var i = 0; i < l; i++) {
@@ -72,6 +71,7 @@ SPManager.prototype._handleGetArtistID = function(deferred, artistName, error, r
     var resultsArtist = JSON.parse(body);
     
     if (resultsArtist.artists.total) {
+
       deferred.resolve({
         "artistName": artistName,
         "artistID": this._selectArtistID(artistName, resultsArtist)
