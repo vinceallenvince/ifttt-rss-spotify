@@ -16,8 +16,6 @@ function EmailManager(eventEmitter, user, pass, email_addr, email_recipe, hash_t
 
 EmailManager.prototype.emailItems = function(items) {
 
-  console.log(items);
-  
   var transporter = nodemailer.createTransport({
     service: "Gmail",
     auth: {

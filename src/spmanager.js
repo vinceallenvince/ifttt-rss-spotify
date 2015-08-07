@@ -12,21 +12,6 @@ function SPManager(eventEmitter, artistSearchURL, artistTracksURL, titleFilter) 
   this.artistNameLookup = {};
 }
 
-/*SPManager.prototype.parseArtistNamesFromEventTitles = function(eventTitles) {
-	
-  var l = eventTitles.length;
-  var artistNames = [];
-  for (var i = 0; i < l; i++) {
-    var parsedName = this._parseArtistName(this.titleFilter, eventTitles[i].title);
-    if (!this.artistNameLookup[parsedName] && parsedName.search("(CANCELLED)") == -1) {
-      this.artistNameLookup[parsedName] = true;
-      artistNames.push(parsedName);
-    }
-  }
-
-  this.eventEmitter.emit("artistNamesParsed", artistNames);
-};*/
-
 SPManager.prototype.parseArtistNamesDatesFromEventTitles = function(eventTitles) {
   
   var l = eventTitles.length;
@@ -187,4 +172,3 @@ SPManager.prototype._nullifyArtist = function(deferred) {
 };
 
 module.exports = SPManager;
-

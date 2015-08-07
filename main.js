@@ -24,9 +24,6 @@ try {
   cachedItems = {};
 }
 
-// Holds artist names
-//var artistNames = [];
-
 // TODO: check args length; return if entries missing
 
 // RSS feed url
@@ -49,18 +46,6 @@ fm.requestFeed();
 var spm = new SPManager(emitter, "https://api.spotify.com/v1/search?type=artist&q=", "https://api.spotify.com/v1/artists/", titleFilter);
 var em = new EmailManager(emitter, config.email_addr, config.email_pwd, config.email_addr, config.email_recipe, emailHashTag);
 
-/*emitter.addListener("feedItem", function(item) {
-
-  var venueExp = new RegExp(titleFilter, "i");
-  var withExp = new RegExp("\\with[^)]*\\w", "i");
-  var commaExp = new RegExp("\\,[^)]*\\w", "i");
-
-  if (!cachedItems[item.title] && item.title.search(venueExp) != -1) {
-    cachedItems[item.title] = "true";
-    var artistName = item.title.replace(venueExp, "").replace(withExp, "").replace(commaExp, "").trim();
-    artistNames.push(artistName.trim());
-  }
-});*/
 
 emitter.addListener("feedEnd", function() {
 
@@ -69,14 +54,8 @@ emitter.addListener("feedEnd", function() {
   fs.writeFile(CACHED_ITEMS_FILENAME, str, function(error) {
     if (error) throw error;
   });
-
-  //spm.parseArtistNamesFromEventTitles(fm.eventTitles);
   spm.parseArtistNamesDatesFromEventTitles(fm.eventTitles);
 });
-
-/*emitter.addListener("artistNamesParsed", function(artistNames) {
-  spm.getArtistIDs(artistNames);
-});*/
 
 emitter.addListener("artistNamesDatesParsed", function(eventList) {
   spm.getArtistIDs(eventList);
@@ -89,8 +68,3 @@ emitter.addListener("eventListCreated", function(eventList) {
 emitter.addListener("eventListSortedByDate", function(eventList) {
   em.emailItems(eventList);
 });
-
-/*emitter.addListener("eventListCreated", function(results) {
-  // Artists are verified. Top tracks fetched. Send IFTTT email for each.
-  em.emailItems(results);
-});*/
