@@ -9,22 +9,41 @@ function SPManager(eventEmitter, artistSearchURL, artistTracksURL, titleFilter) 
 	this.artistSearchURL = artistSearchURL;
 	this.artistTracksURL = artistTracksURL;
   this.titleFilter = titleFilter;
-  this.lookup = {};
+  this.artistNameLookup = {};
 }
 
-SPManager.prototype.parseAritstNamesFromEventTitles = function(eventTitles) {
+/*SPManager.prototype.parseArtistNamesFromEventTitles = function(eventTitles) {
 	
   var l = eventTitles.length;
   var artistNames = [];
   for (var i = 0; i < l; i++) {
     var parsedName = this._parseArtistName(this.titleFilter, eventTitles[i].title);
-    if (!this.lookup[parsedName] && parsedName.search("(CANCELLED)") == -1) {
-      this.lookup[parsedName] = true;
+    if (!this.artistNameLookup[parsedName] && parsedName.search("(CANCELLED)") == -1) {
+      this.artistNameLookup[parsedName] = true;
       artistNames.push(parsedName);
     }
   }
 
   this.eventEmitter.emit("artistNamesParsed", artistNames);
+};*/
+
+SPManager.prototype.parseArtistNamesDatesFromEventTitles = function(eventTitles) {
+  
+  var l = eventTitles.length;
+  var eventList = [];
+  for (var i = 0; i < l; i++) {
+    var parsedName = this._parseArtistName(this.titleFilter, eventTitles[i].title);
+    var parsedDate = this._parseDateFromEventTitle(eventTitles[i].title);
+    if (!this.artistNameLookup[parsedName] && parsedName.search("(CANCELLED)") == -1) {
+      this.artistNameLookup[parsedName] = true;
+      eventList.push({
+        "name": parsedName,
+        "date": parsedDate
+      });
+    }
+  }
+
+  this.eventEmitter.emit("artistNamesDatesParsed", eventList);
 };
 
 SPManager.prototype._parseArtistName = function(titleFilter, eventTitle) {
@@ -36,12 +55,16 @@ SPManager.prototype._parseArtistName = function(titleFilter, eventTitle) {
   return eventTitle.replace(venueExp, "").replace(withExp, "").replace(commaExp, "").replace("&", "and").trim();
 };
 
-SPManager.prototype.getArtistIDs = function(artistNames) {
-  
+SPManager.prototype._parseDateFromEventTitle = function(eventTitle) {
+  var dateExp = new RegExp("\\([^)]*\\)", "i");
+  return eventTitle.match(dateExp)[0].replace("(", "").replace(")", "").trim();
+};
+
+SPManager.prototype.getArtistIDs = function(eventList) {
   var promises = [];
-  var l = artistNames.length;
+  var l = eventList.length;
   for (var i = 0; i < l; i++) {
-    promises.push(this._getArtistID(artistNames[i]));
+    promises.push(this._getArtistID(eventList[i]));
   }
 
   var allPromises = Q.all(promises);
@@ -49,9 +72,9 @@ SPManager.prototype.getArtistIDs = function(artistNames) {
     then(this.handleAllGetArtistIDs.bind(this));
 };
 
-SPManager.prototype._getArtistID = function(artistName) {
+SPManager.prototype._getArtistID = function(event) {
 	var deferred = Q.defer();
-  request(encodeURI("https://api.spotify.com/v1/search?type=artist&q=" + artistName), this._handleGetArtistID.bind(this, deferred, artistName));
+  request(encodeURI("https://api.spotify.com/v1/search?type=artist&q=" + event.name), this._handleGetArtistID.bind(this, deferred, event));
   return deferred.promise;
 };
 
@@ -65,46 +88,41 @@ SPManager.prototype._selectArtistID = function(artistName, resultsArtist) {
   }
 };
 
-SPManager.prototype._handleGetArtistID = function(deferred, artistName, error, response, body) {
+SPManager.prototype._handleGetArtistID = function(deferred, event, error, response, body) {
 
-  // special chars cause problems resolving artistIDs
+  // TODO: Spotify api may not resolve artistIDs for artist names w special characters
 
-  if (!error && response.statusCode == 200) {
-
-    var resultsArtist = JSON.parse(body);
-    
-    if (resultsArtist.artists.total) {
-
-      deferred.resolve({
-        "artistName": artistName,
-        "artistID": this._selectArtistID(artistName, resultsArtist)
-      });
-    } else if (artistName.search(" and ") != -1) { // check the name is not a combination of artist names; is there an "and " in the artistName
-        var andExp = new RegExp("\\and[^)]*\\w", "i");
-        var altName = artistName.replace(andExp, "").trim();
-        request(encodeURI("https://api.spotify.com/v1/search?type=artist&q=" + altName), this._handleGetArtistID.bind(this, deferred, altName));
-    } else { // Spotify API did not return an artist
-      deferred.resolve({
-        "artistName": null,
-        "artistID": null
-      });
-    }
-  } else {
-    deferred.resolve({
-      "artistName": null,
-      "artistID": null
-    });
+  if (error || response.statusCode != 200) {
+    this._nullifyArtist(deferred);
+    return;
   }
+
+  var resultsArtist = JSON.parse(body);
+  
+  if (resultsArtist.artists.total) {
+    deferred.resolve({
+      "artistName": event.name,
+      "artistID": this._selectArtistID(event.name, resultsArtist),
+      "eventDate": event.date
+    });
+  } else if (event.name.search(" and ") != -1) { // check the name is not a combination of artist names; is there an "and " in the artistName
+      var andExp = new RegExp("\\and[^)]*\\w", "i");
+      var altName = event.name.replace(andExp, "").trim();
+      request(encodeURI("https://api.spotify.com/v1/search?type=artist&q=" + altName), this._handleGetArtistID.bind(this, deferred, {name: altName, date: event.date}));
+  } else { // Spotify API did not return an artist
+    this._nullifyArtist(deferred);
+  }
+  
 };
 
 SPManager.prototype.handleAllGetArtistIDs = function(results) {
-  
+
   var promises = []; 
   
   var l = results.length;
   for (var i = 0; i < l; i++) {
     if (results[i].artistID && results[i].artistName) {
-      promises.push(this.getTopTrack(results[i].artistID, results[i].artistName));
+      promises.push(this.getTopTrack(results[i]));
     }
   }
 
@@ -113,13 +131,13 @@ SPManager.prototype.handleAllGetArtistIDs = function(results) {
     then(this.handleAllGetTopTracks.bind(this)); 
 }
 
-SPManager.prototype.getTopTrack = function(artistID, artistName) {
+SPManager.prototype.getTopTrack = function(event) {
   var deferred = Q.defer();
-  request(encodeURI("https://api.spotify.com/v1/artists/" + artistID + "/top-tracks?country=US"), this.handleGetTopTrack.bind(this, deferred, artistID, artistName));
+  request(encodeURI("https://api.spotify.com/v1/artists/" + event.artistID + "/top-tracks?country=US"), this.handleGetTopTrack.bind(this, deferred, event));
   return deferred.promise;
 }
 
-SPManager.prototype.handleGetTopTrack = function(deferred, artistID, artistName, error, response, body) {
+SPManager.prototype.handleGetTopTrack = function(deferred, event, error, response, body) {
 
   if (error || response.statusCode != 200) {
     this.handleError(error, deferred);
@@ -132,27 +150,40 @@ SPManager.prototype.handleGetTopTrack = function(deferred, artistID, artistName,
 
   if (resultsTrack.tracks.length) {
     var topTrack = resultsTrack.tracks[0].name;
-    deferred.resolve({
-      "artistName": artistName,
-      "artistID": artistID,
-      "topTrack": topTrack
-    });
+    event.artistTopTrack = topTrack;
+    deferred.resolve(event);
     return;
   }
-  deferred.resolve({ // no top track
-    "artistName": artistName,
-    "artistID": artistID,
-    "topTrack": null
-  });
+  event.artistTopTrack = null;
+  deferred.resolve(event);
 };
 
 SPManager.prototype.handleAllGetTopTracks = function(results) {
-	this.eventEmitter.emit("artistsDone", results);
+	this.eventEmitter.emit("eventListCreated", results);
 }
+
+/**
+ * Sorts items by event date ascending.
+ */
+SPManager.prototype.sortEventListByDate = function(eventList) {
+  var sortedList = eventList.sort(function(a, b) {
+    return Date.parse(a.eventDate) - Date.parse(b.eventDate);
+  });
+  this.eventEmitter.emit("eventListSortedByDate", sortedList);
+};
 
 SPManager.prototype.handleError = function(error, deferred) {
   console.log("Error: " + error);
   deferred.reject();
+};
+
+SPManager.prototype._nullifyArtist = function(deferred) {
+  deferred.resolve({
+    "artistName": null,
+    "artistID": null,
+    "eventDate": null,
+    "artistTopTrack": null
+  });
 };
 
 module.exports = SPManager;

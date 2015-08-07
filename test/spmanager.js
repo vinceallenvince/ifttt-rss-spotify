@@ -85,7 +85,7 @@ describe('SPManager', function() {
 			}
 		};
 
-		spManager.parseAritstNamesFromEventTitles(eventTitles);
+		spManager.parseArtistNamesFromEventTitles(eventTitles);
 	});
 
 	it("should parse artist names", function() {
@@ -111,6 +111,14 @@ describe('SPManager', function() {
 		expect(name).toEqual("Lynda DeFuria");
 
 	});
+  
+  it("should parse dates from event titles.", function() {
+
+    var eventTitle = "Afika Nx with Kwesi K, Jordan Bratton, Gabi Wilson, and 1 more at Pianos (August 5, 2015)";
+    var name = spManager._parseDateFromEventTitle(eventTitle);
+    expect(name).toEqual("August 5, 2015");
+  });
+
 
 it("should select artistID from artistResults.", function () {
 
@@ -175,6 +183,73 @@ it("should select artistID from artistResults.", function () {
   var expectedResult = "0B99YzQXttG6nvi5GcIoda";
   var result = spManager._selectArtistID("Kat Wright & the Indomitable Soul Band", artistResults);
   expect(expectedResult).toEqual(result);
+});
+
+
+it("should nullify an artist.", function() {
+
+  var artist;
+  var deferred = {resolve: function(results) {artist = results}};
+
+  spManager._nullifyArtist(deferred);
+  expect(artist.artistName).toEqual(null);
+  expect(artist.artistID).toEqual(null);
+  expect(artist.topTrack).toEqual(null);
+});
+
+
+it("should handle getting an artist id.", function() {
+
+  var artist;
+  var artistName = "Kat Wright";
+  var deferred = {resolve: function(results) {artist = results}};
+
+  // tests errors
+
+  spManager._handleGetArtistID(deferred, artistName, true, {statusCode: 200}, '{"artists": {}}');
+  expect(artist.artistName).toEqual(null);
+  expect(artist.artistID).toEqual(null);
+  expect(artist.topTrack).toEqual(null);
+
+  spManager._handleGetArtistID(deferred, artistName, false, {statusCode: 300}, '{"artists": {}}');
+  expect(artist.artistName).toEqual(null);
+  expect(artist.artistID).toEqual(null);
+  expect(artist.topTrack).toEqual(null);
+
+  // tests api returning an artist
+  var stubSelectArtistID = sinon.stub(spManager, "_selectArtistID", function() {
+    return 1;
+  });
+
+  var body = {
+    "artists": {
+      "total": 1,
+      "items": [
+        {
+          "name": "Kat Wright",
+          "id": "3FX6ZjUpCoJOwsxleWx2ci"
+        }
+      ]
+    }
+  }
+  spManager._handleGetArtistID(deferred, artistName, false, {statusCode: 200}, JSON.stringify(body));
+  expect(artist.artistName).toEqual("Kat Wright");
+  expect(artist.artistID).toEqual(1);
+  expect(artist.topTrack).toEqual(null);
+
+  // tests no artists returned
+  var body = {
+    "artists": {
+      "total": 0
+    }
+  }
+  spManager._handleGetArtistID(deferred, artistName, false, {statusCode: 200}, JSON.stringify(body));
+  expect(artist.artistName).toEqual(null);
+  expect(artist.artistID).toEqual(null);
+  expect(artist.topTrack).toEqual(null);
+
+  // TODO: test no artists returned; artist name contains " and "
+  
 });
 
 

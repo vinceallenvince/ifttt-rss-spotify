@@ -1,10 +1,11 @@
 var FeedParser = require("feedparser");
 var request = require("request");
 
-function FeedManager(eventEmitter, feedUrl) {
+function FeedManager(eventEmitter, feedUrl, cachedItems) {
 	if (!feedUrl) new Error();
 	this.eventEmitter = eventEmitter;
 	this.feedUrl = feedUrl;
+	this.cachedItems = cachedItems;
 	this.eventTitles = [];
 }
 
@@ -12,11 +13,12 @@ FeedManager.prototype.requestFeed = function() {
 
 	var eventEmitter = this.eventEmitter;
 	var eventTitles = this.eventTitles;
+	var cachedItems = this.cachedItems;
 
 	var onError = function(error) {console.error(error);};
 
 	var handleFeedEnd = function() {
-		eventEmitter.emit("feedEnd");
+		eventEmitter.emit("feedEnd", eventTitles);
 	};
 
 	request(this.feedUrl)
@@ -26,8 +28,10 @@ FeedManager.prototype.requestFeed = function() {
 	    .on("readable", function() {
 	    	var stream = this, item;
 				while (item = stream.read()) {
-					//eventEmitter.emit("feedItem", item);
-					eventTitles.push(item);
+					if (!cachedItems[item.title]) {
+						cachedItems[item.title] = "true";
+						eventTitles.push(item);
+					}
 				} 
 	    })
 	    .on("end", handleFeedEnd);
