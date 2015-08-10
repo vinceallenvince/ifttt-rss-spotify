@@ -20,7 +20,7 @@ FeedManager.prototype.requestFeed = function() {
 	var handleFeedEnd = function() {
 		eventEmitter.emit("feedEnd", eventTitles);
 	};
-
+  console.log(this.feedUrl);
 	request(this.feedUrl)
 	    .on("error", onError)
 	    .pipe(new FeedParser())
